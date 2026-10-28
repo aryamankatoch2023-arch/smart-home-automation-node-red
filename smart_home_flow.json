@@ -1,0 +1,801 @@
+[
+    {
+        "id": "166d85307217b784",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "a37c37853a722a08",
+        "type": "function",
+        "z": "166d85307217b784",
+        "name": "Smart Home Controller",
+        "func": "\nlet light = context.get(\"light\") || false;\nlet fan = context.get(\"fan\") || false;\nlet autoLight = context.get(\"autoLight\");\nlet autoFan = context.get(\"autoFan\");\nlet temperature = context.get(\"temperature\");\nlet motion = context.get(\"motion\") || false;\nlet idleTicks = context.get(\"idleTicks\") || 0;\n\n// Dashboard controls send commands using msg.topic\nif (msg.topic === \"light\") {\n    light = Boolean(msg.payload);\n}\nif (msg.topic === \"fan\") {\n    fan = Boolean(msg.payload);\n}\nif (msg.topic === \"autoLight\") {\n    autoLight = Boolean(msg.payload);\n}\nif (msg.topic === \"autoFan\") {\n    autoFan = Boolean(msg.payload);\n}\n\n// Initialize default automatic modes\nif (autoLight === undefined) autoLight = true;\nif (autoFan === undefined) autoFan = true;\n\n// Update simulated sensors on each timer tick\nif (msg.topic === \"tick\" || msg.topic === \"inject\") {\n    temperature = temperature === undefined\n        ? 24\n        : Math.max(20, Math.min(36,\n            temperature + (Math.random() - 0.48) * 2));\n\n    motion = Math.random() < 0.35;\n\n    if (motion) {\n        idleTicks = 0;\n    } else {\n        idleTicks++;\n    }\n\n    if (autoLight && motion) {\n        light = true;\n    } else if (autoLight && idleTicks >= 3) {\n        light = false;\n    }\n\n    if (autoFan && temperature >= 28) {\n        fan = true;\n    } else if (autoFan && temperature <= 25) {\n        fan = false;\n    }\n}\n\ncontext.set(\"light\", light);\ncontext.set(\"fan\", fan);\ncontext.set(\"autoLight\", autoLight);\ncontext.set(\"autoFan\", autoFan);\ncontext.set(\"temperature\", temperature);\ncontext.set(\"motion\", motion);\ncontext.set(\"idleTicks\", idleTicks);\n\nlet energy = 0;\n\nif (light) {\n    energy += 5 + Math.random() * 15;\n}\n\nif (fan) {\n    energy += 20 + Math.random() * 40;\n}\n\nenergy = Math.round(energy * 10) / 10;\nlet alert = motion\n    ? \"Motion detected\"\n    : \"No motion detected\";\n\nreturn [\n    { payload: light ? \"ON\" : \"OFF\" },\n    { payload: fan ? \"ON\" : \"OFF\" },\n    { payload: temperature === undefined ? 24 : +temperature.toFixed(1) },\n    { payload: motion ? \"DETECTED\" : \"CLEAR\" },\n    { payload: alert },\n    { payload: energy }\n];",
+        "outputs": 6,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1260,
+        "y": 800,
+        "wires": [
+            [
+                "54a0fe40b819e924",
+                "50d8b449507627aa"
+            ],
+            [
+                "f5db7d9b07a2532b",
+                "0d4214e6e62f9d89"
+            ],
+            [
+                "6052378e5095f9d4",
+                "c7539225c63efd1b"
+            ],
+            [
+                "1f47af2b31dc2d52",
+                "a4e9a56248d73e0c"
+            ],
+            [
+                "35834e7ee6439301",
+                "9fb45eb7725b8275"
+            ],
+            [
+                "e6b20394064a163e",
+                "2edc8a41cfd0d08f",
+                "18870f7c967afca0"
+            ]
+        ]
+    },
+    {
+        "id": "bd1f7c547cd412ae",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "TIMER",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "tick",
+        "payload": "tick",
+        "payloadType": "str",
+        "x": 660,
+        "y": 440,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "656b61bbb0c22d6c",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "MANUAL LIGHT ",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "light",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 640,
+        "y": 520,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "2ca867a24175b127",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "MANUAL FAN",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "fan",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 650,
+        "y": 660,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "294cb9321912db90",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "AUTO LIGHT",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "autoLight",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 650,
+        "y": 800,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "b8ec7b4aa6f060ef",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "AUTO FAN",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "autoFan",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 660,
+        "y": 940,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "397152999570e10c",
+        "type": "inject",
+        "z": "166d85307217b784",
+        "name": "MANUAL LIGHT OFF",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "light",
+        "payload": "false",
+        "payloadType": "bool",
+        "x": 640,
+        "y": 1080,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "54a0fe40b819e924",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "LIGHT STATUS",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1800,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "f5db7d9b07a2532b",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "FAN STATUS",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1800,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "6052378e5095f9d4",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "TEMPERATURE",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1810,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "1f47af2b31dc2d52",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "MOTION",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1780,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "35834e7ee6439301",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "ALERT",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1780,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "e6b20394064a163e",
+        "type": "debug",
+        "z": "166d85307217b784",
+        "name": "POWER USAGE",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1830,
+        "y": 1060,
+        "wires": []
+    },
+    {
+        "id": "416573a16230af0e",
+        "type": "ui-switch",
+        "z": "166d85307217b784",
+        "name": "light",
+        "label": "Light",
+        "group": "bd90db76c41da406",
+        "order": 10,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "light",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 670,
+        "y": 580,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "bcb5a01bca1eca97",
+        "type": "ui-switch",
+        "z": "166d85307217b784",
+        "name": "autoFan",
+        "label": "AutoFan",
+        "group": "bd90db76c41da406",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "autoLight",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 660,
+        "y": 1000,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "0c2a5546d965b595",
+        "type": "ui-switch",
+        "z": "166d85307217b784",
+        "name": "fan",
+        "label": "Fan",
+        "group": "bd90db76c41da406",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "fan",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 670,
+        "y": 720,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "4ff8a264a0b47ae8",
+        "type": "ui-switch",
+        "z": "166d85307217b784",
+        "name": "autoLight",
+        "label": "AutoLight",
+        "group": "bd90db76c41da406",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "autoFan",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 660,
+        "y": 860,
+        "wires": [
+            [
+                "a37c37853a722a08"
+            ]
+        ]
+    },
+    {
+        "id": "c7539225c63efd1b",
+        "type": "ui-gauge",
+        "z": "166d85307217b784",
+        "name": "Temperature Gauge",
+        "group": "bd90db76c41da406",
+        "order": 6,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "room temperature",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "°C",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#0db4de",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "18",
+                "color": "#15ea06",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "32",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "40",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 1820,
+        "y": 700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a4e9a56248d73e0c",
+        "type": "ui-text",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "Motion Status",
+        "label": "Motion Detection",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1800,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "18870f7c967afca0",
+        "type": "ui-chart",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "name": "Power consumption chart",
+        "label": "Power (W)",
+        "order": 11,
+        "chartType": "line",
+        "category": "Power",
+        "categoryType": "str",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 1830,
+        "y": 1000,
+        "wires": [
+            [
+                "e6b20394064a163e"
+            ]
+        ]
+    },
+    {
+        "id": "9fb45eb7725b8275",
+        "type": "ui-text",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "Alert Status",
+        "label": "System Alert",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1790,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "50d8b449507627aa",
+        "type": "ui-text",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "Light status",
+        "label": "Light",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1790,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "0d4214e6e62f9d89",
+        "type": "ui-text",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "Fan status",
+        "label": "Fan",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1790,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "2edc8a41cfd0d08f",
+        "type": "ui-text",
+        "z": "166d85307217b784",
+        "group": "bd90db76c41da406",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Power usage ",
+        "label": "Current Power",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1810,
+        "y": 1120,
+        "wires": []
+    },
+    {
+        "id": "bd90db76c41da406",
+        "type": "ui-group",
+        "name": "Home Monitoring",
+        "page": "f385df134a16ef8f",
+        "width": 6,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default",
+        "tab": ""
+    },
+    {
+        "id": "f385df134a16ef8f",
+        "type": "ui-page",
+        "name": "Smart Home",
+        "ui": "d905c14a5f9d4ac9",
+        "path": "/page1",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "15a142be1fc8a8a6",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "tabs": [],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "d905c14a5f9d4ac9",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "15a142be1fc8a8a6",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#fcfcfd",
+            "primary": "#0d74ce",
+            "bgPage": "#f9f9fb",
+            "groupBg": "#ffffff",
+            "groupOutline": "#d9d9e0"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "1035aa1d3a1e9a9c",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.34.0"
+        }
+    }
+]
